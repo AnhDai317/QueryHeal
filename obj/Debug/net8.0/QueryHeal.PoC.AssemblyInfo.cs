@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("QueryHeal.PoC")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b2f315d0286f0d623ebc6a910d916fc28585b6a3")]
 [assembly: System.Reflection.AssemblyProductAttribute("QueryHeal.PoC")]
 [assembly: System.Reflection.AssemblyTitleAttribute("QueryHeal.PoC")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

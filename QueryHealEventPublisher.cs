@@ -16,11 +16,11 @@ public class QueryHealEventPublisher
     {
         await _hubContext.Clients.All.SendAsync("ReceiveAnomaly", new
         {
-            Timestamp = timestamp,
-            TableName = tableName,
-            SuggestedFix = suggestedFix,
-            WastedCpuMs = wastedCpuMs,
-            WastedCarbonGrams = wastedCarbonGrams
+            timestamp = timestamp,
+            tableName = tableName,
+            suggestedFix = suggestedFix,
+            wastedCpuMs = wastedCpuMs,
+            wastedCarbonGrams = wastedCarbonGrams
         });
     }
 }

@@ -56,48 +56,42 @@ public class NPlusOneSimulatorService : BackgroundService
     {
         _sp = sp;
     }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Wait for the app to start up and UI to potentially connect
         await Task.Delay(2000, stoppingToken);
 
+        // 1. CHỈ TẠO VÀ SEED DATABASE 1 LẦN DUY NHẤT Ở ĐÂY
+        using (var initScope = _sp.CreateScope())
+        {
+            var initContext = initScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            initContext.Database.EnsureDeleted();
+            initContext.Database.EnsureCreated();
+            SeedDatabase(initContext);
+            Console.WriteLine("Database initialized and seeded.\n");
+        }
+
+        // 2. VÒNG LẶP CHỈ LÀM NHIỆM VỤ QUERY
         while (!stoppingToken.IsCancellationRequested)
         {
             using var scope = _sp.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            // Recreate DB cleanly for each run
-            context.Database.EnsureDeleted();
-            context.Database.EnsureCreated();
+            Console.WriteLine("\n[Simulator] Running N+1 Scenario...");
 
-            SeedDatabase(context);
-
-            Console.WriteLine("Database seeded. Running N+1 Scenario...\n");
-
-            // Clear the change tracker so that EF Core doesn't use the cached entities from SeedDatabase.
-            // This forces the N+1 lazy loading to actually hit the database.
+            // Xóa cache để ép EF Core phải chọc xuống DB thay vì lấy từ Memory
             context.ChangeTracker.Clear();
 
-            // 1. Query Orders (this is the "1" in N+1)
             var orders = context.Orders.ToList();
 
-            Console.WriteLine($"Found {orders.Count} orders. Iterating and accessing Customer (Lazy Loading)...");
-
-            // 2. Iterate and access navigation property, triggering "N" additional queries
+            // Vòng lặp gây ra N+1
             foreach (var order in orders)
             {
-                var customerName = order.Customer.Name;
-                if (customerName == null) throw new Exception("Customer missing");
+                var customerName = order.Customer?.Name;
             }
 
-            Console.WriteLine("Finished N+1 Scenario. Interceptor should have logged warnings and broadcast to UI.");
-
-            // Wait 10 seconds before simulating again
             await Task.Delay(10000, stoppingToken);
         }
     }
-
     private void SeedDatabase(AppDbContext context)
     {
         // Add 10 unique customers and 10 orders to trigger the N+1 threshold (> 5) on SELECT

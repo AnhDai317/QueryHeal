@@ -16,15 +16,15 @@ public class QueryHealInterceptor : DbCommandInterceptor
     {
         _publisher = publisher;
     }
-    
+
     // Configurable thresholds for N+1 anomaly detection
     private const int NPlusOneThreshold = 5;
     private static readonly TimeSpan TimeWindow = TimeSpan.FromMilliseconds(100);
 
     public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
-        DbCommand command, 
-        CommandEventData eventData, 
-        InterceptionResult<DbDataReader> result, 
+        DbCommand command,
+        CommandEventData eventData,
+        InterceptionResult<DbDataReader> result,
         CancellationToken cancellationToken = default)
     {
         TrackCommand(command);
@@ -32,8 +32,8 @@ public class QueryHealInterceptor : DbCommandInterceptor
     }
 
     public override InterceptionResult<DbDataReader> ReaderExecuting(
-        DbCommand command, 
-        CommandEventData eventData, 
+        DbCommand command,
+        CommandEventData eventData,
         InterceptionResult<DbDataReader> result)
     {
         TrackCommand(command);
@@ -50,11 +50,10 @@ public class QueryHealInterceptor : DbCommandInterceptor
         if (!span.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)) return;
 
         // Use Environment.TickCount64 for high performance, low-allocation time tracking
-        var now = Environment.TickCount64; Console.WriteLine($"TrackCommand: {sql.Substring(0, Math.Min(sql.Length, 30))}... | now: {now}");
-
-        _trackers.AddOrUpdate(sql, 
-            _ => new QueryTracker(now), 
-            (_, tracker) => 
+        var now = Environment.TickCount64;
+        _trackers.AddOrUpdate(sql,
+            _ => new QueryTracker(now),
+            (_, tracker) =>
             {
                 lock (tracker)
                 {
@@ -74,7 +73,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
                             ReportAnomaly(sql, tracker.Count, TimeWindow.TotalMilliseconds);
                         }
                     }
-                    
+
                     tracker.LastSeenAt = now;
                 }
                 return tracker;
@@ -126,7 +125,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         // Broadcast to SignalR Web Dashboard
         var fixText = $"var data = query.Include(x => x.{propertyName}).ToList();";
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
-        
+
         // Fire and forget so we don't block the interception
         _ = _publisher.BroadcastAnomalyAsync(timestamp, tableName, fixText, totalCpuTime, totalCo2);
     }
@@ -161,7 +160,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         {
             return tableName.Substring(0, tableName.Length - 1);
         }
-        
+
         return tableName;
     }
 
@@ -175,8 +174,8 @@ public class QueryHealInterceptor : DbCommandInterceptor
         public QueryTracker(long firstSeenAt)
         {
             FirstSeenAt = firstSeenAt;
-            LastSeenAt = firstSeenAt;   
-         Count = 1;
+            LastSeenAt = firstSeenAt;
+            Count = 1;
             Reported = false;
         }
     }
