@@ -12,7 +12,7 @@ public class QueryHealEventPublisher
         _hubContext = hubContext;
     }
 
-    public async Task BroadcastAnomalyAsync(string timestamp, string tableName, string suggestedFix, double wastedCpuMs, double wastedCarbonGrams)
+    public async Task BroadcastAnomalyAsync(string timestamp, string tableName, string suggestedFix, double wastedCpuMs, double wastedCarbonGrams, string callerInfo)
     {
         await _hubContext.Clients.All.SendAsync("ReceiveAnomaly", new
         {
@@ -20,7 +20,8 @@ public class QueryHealEventPublisher
             tableName = tableName,
             suggestedFix = suggestedFix,
             wastedCpuMs = wastedCpuMs,
-            wastedCarbonGrams = wastedCarbonGrams
+            wastedCarbonGrams = wastedCarbonGrams,
+            callerInfo = callerInfo
         });
     }
 }

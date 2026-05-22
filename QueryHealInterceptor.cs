@@ -70,7 +70,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
                         if (tracker.Count >= NPlusOneThreshold && !tracker.Reported)
                         {
                             tracker.Reported = true;
-                            ReportAnomaly(sql, tracker.Count, TimeWindow.TotalMilliseconds);
+                            ReportAnomaly(sql, tracker.Count, TimeWindow.TotalMilliseconds, GetCallerInfo());
                         }
                     }
 
@@ -82,7 +82,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
 
     private static readonly Regex TableRegex = new(@"FROM\s+[""\[`]?([a-zA-Z0-9_]+)[""\]`]?", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-    private void ReportAnomaly(string sql, int count, double timeWindowMs)
+    private void ReportAnomaly(string sql, int count, double timeWindowMs, string callerInfo)
     {
         // Heuristics: 1 redundant query = 0.05g CO2, 5ms CPU time wasted
         double co2PerQuery = 0.05;
@@ -98,7 +98,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         Console.WriteLine("========================================================");
         Console.ResetColor();
 
-        PrintSmartSuggestion(sql, totalCpuTime, totalCo2);
+        PrintSmartSuggestion(sql, totalCpuTime, totalCo2, callerInfo);
 
         Console.WriteLine("--------------------------------------------------------");
         Console.WriteLine($"Query Signature:");
@@ -106,7 +106,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         Console.WriteLine("========================================================\n");
     }
 
-    private void PrintSmartSuggestion(string sql, double totalCpuTime, double totalCo2)
+    private void PrintSmartSuggestion(string sql, double totalCpuTime, double totalCo2, string callerInfo)
     {
         string tableName = ExtractTableName(sql);
         string propertyName = GetNavigationPropertyName(tableName);
@@ -115,7 +115,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         Console.WriteLine("\x1b[31m[QueryHeal] SMART SUGGESTION:\x1b[0m");
         Console.WriteLine("========================================================");
         Console.WriteLine($"\x1b[31m Problem: N+1 Query detected on '{tableName}'.\x1b[0m");
-        Console.WriteLine("\x1b[33m↳ You are accessing the entity in a loop.\x1b[0m");
+        Console.WriteLine($"\x1b[33m↳ Triggered at: {callerInfo}\x1b[0m");
         Console.WriteLine("\x1b[36m Fix: Add .Include() to your LINQ query:\x1b[0m");
         Console.WriteLine("\x1b[37m   BEFORE: var data = query.ToList();\x1b[0m");
         Console.WriteLine($"\x1b[32m   AFTER:  var data = query.Include(x => x.{propertyName}).ToList();\x1b[0m");
@@ -127,7 +127,7 @@ public class QueryHealInterceptor : DbCommandInterceptor
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
 
         // Fire and forget so we don't block the interception
-        _ = _publisher.BroadcastAnomalyAsync(timestamp, tableName, fixText, totalCpuTime, totalCo2);
+        _ = _publisher.BroadcastAnomalyAsync(timestamp, tableName, fixText, totalCpuTime, totalCo2, callerInfo);
     }
 
     private static string ExtractTableName(string sql)
@@ -162,6 +162,32 @@ public class QueryHealInterceptor : DbCommandInterceptor
         }
 
         return tableName;
+    }
+
+    private static string GetCallerInfo()
+    {
+        try
+        {
+            var stackTrace = new System.Diagnostics.StackTrace(true);
+            foreach (var frame in stackTrace.GetFrames())
+            {
+                var method = frame.GetMethod();
+                var declaringType = method?.DeclaringType;
+                if (declaringType != null && 
+                    !declaringType.FullName.StartsWith("System.") && 
+                    !declaringType.FullName.StartsWith("Microsoft."))
+                {
+                    var file = frame.GetFileName();
+                    if (!string.IsNullOrEmpty(file))
+                    {
+                        var line = frame.GetFileLineNumber();
+                        return $"{System.IO.Path.GetFileName(file)}:line {line}";
+                    }
+                }
+            }
+        }
+        catch { }
+        return "Unknown caller";
     }
 
     private class QueryTracker
