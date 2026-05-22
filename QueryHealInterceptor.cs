@@ -116,14 +116,13 @@ public class QueryHealInterceptor : DbCommandInterceptor
         Console.WriteLine("========================================================");
         Console.WriteLine($"\x1b[31m Problem: N+1 Query detected on '{tableName}'.\x1b[0m");
         Console.WriteLine($"\x1b[33m↳ Triggered at: {callerInfo}\x1b[0m");
-        Console.WriteLine("\x1b[36m Fix: Add .Include() to your LINQ query:\x1b[0m");
-        Console.WriteLine("\x1b[37m   BEFORE: var data = query.ToList();\x1b[0m");
-        Console.WriteLine($"\x1b[32m   AFTER:  var data = query.Include(x => x.{propertyName}).ToList();\x1b[0m");
+        Console.WriteLine("\x1b[36m Fix: Eager load the related entity to avoid N+1:\x1b[0m");
+        Console.WriteLine($"\x1b[32m   -> Append .Include(x => x.{propertyName}) to your original query.\x1b[0m");
         Console.WriteLine($"\x1b[92m Impact: Saved ~{totalCpuTime:F0}ms CPU = {totalCo2:F2}g CO2e per execution.\x1b[0m");
         Console.WriteLine("========================================================");
 
         // Broadcast to SignalR Web Dashboard
-        var fixText = $"var data = query.Include(x => x.{propertyName}).ToList();";
+        var fixText = $"Append .Include(x => x.{propertyName}) to your original query.";
         var timestamp = DateTime.Now.ToString("HH:mm:ss.fff");
 
         // Fire and forget so we don't block the interception
