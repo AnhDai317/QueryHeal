@@ -57,3 +57,4 @@ D:\QueryHeal\obj\Debug\net8.0\staticwebassets.build.json
 D:\QueryHeal\obj\Debug\net8.0\staticwebassets.build.json.cache
 D:\QueryHeal\obj\Debug\net8.0\staticwebassets.development.json
 D:\QueryHeal\obj\Debug\net8.0\staticwebassets.build.endpoints.json
+D:\QueryHeal\obj\Debug\net8.0\QueryHeal.PoC.sourcelink.json
