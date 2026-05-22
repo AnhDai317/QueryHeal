@@ -87,8 +87,8 @@ public class NPlusOneSimulatorService : BackgroundService
 
     private void RunNPlusOneScenario(AppDbContext context)
     {
-        // Fixed N+1 by adding .Include(o => o.Customer)
-        var orders = context.Orders.Include(o => o.Customer).ToList();
+        // 🚨 N+1 Query Scenario (Intentionally left here for the Live Demo)
+        var orders = context.Orders.ToList();
 
         foreach (var order in orders)
         {
@@ -98,7 +98,6 @@ public class NPlusOneSimulatorService : BackgroundService
 
     private void SeedDatabase(AppDbContext context)
     {
-        // Add 10 unique customers and 10 orders to trigger the N+1 threshold (> 5) on SELECT
         for (int i = 0; i < 10; i++)
         {
             var customer = new Customer { Name = $"Customer {i}" };
