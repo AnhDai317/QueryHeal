@@ -70,7 +70,6 @@ public class NPlusOneSimulatorService : BackgroundService
             Console.WriteLine("Database initialized and seeded.\n");
         }
 
-        // 2. VÒNG LẶP CHỈ LÀM NHIỆM VỤ QUERY
         while (!stoppingToken.IsCancellationRequested)
         {
             using var scope = _sp.CreateScope();
@@ -78,20 +77,24 @@ public class NPlusOneSimulatorService : BackgroundService
 
             Console.WriteLine("\n[Simulator] Running N+1 Scenario...");
 
-            // Xóa cache để ép EF Core phải chọc xuống DB thay vì lấy từ Memory
             context.ChangeTracker.Clear();
 
-            var orders = context.Orders.ToList();
-
-            // Vòng lặp gây ra N+1
-            foreach (var order in orders)
-            {
-                var customerName = order.Customer?.Name;
-            }
+            RunNPlusOneScenario(context);
 
             await Task.Delay(10000, stoppingToken);
         }
     }
+
+    private void RunNPlusOneScenario(AppDbContext context)
+    {
+        var orders = context.Orders.ToList();
+
+        foreach (var order in orders)
+        {
+            var customerName = order.Customer?.Name;
+        }
+    }
+
     private void SeedDatabase(AppDbContext context)
     {
         // Add 10 unique customers and 10 orders to trigger the N+1 threshold (> 5) on SELECT
