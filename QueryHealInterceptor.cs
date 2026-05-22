@@ -175,10 +175,11 @@ public class QueryHealInterceptor : DbCommandInterceptor
                 var declaringType = method?.DeclaringType;
                 if (declaringType != null && 
                     !declaringType.FullName.StartsWith("System.") && 
-                    !declaringType.FullName.StartsWith("Microsoft."))
+                    !declaringType.FullName.StartsWith("Microsoft.") &&
+                    !declaringType.FullName.Contains("QueryHealInterceptor"))
                 {
                     var file = frame.GetFileName();
-                    if (!string.IsNullOrEmpty(file) && !file.EndsWith("QueryHealInterceptor.cs"))
+                    if (!string.IsNullOrEmpty(file))
                     {
                         var line = frame.GetFileLineNumber();
                         return $"{System.IO.Path.GetFileName(file)}:line {line}";
