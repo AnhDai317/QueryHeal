@@ -87,7 +87,8 @@ public class NPlusOneSimulatorService : BackgroundService
 
     private void RunNPlusOneScenario(AppDbContext context)
     {
-        var orders = context.Orders.ToList();
+        // Fixed N+1 by adding .Include(o => o.Customer)
+        var orders = context.Orders.Include(o => o.Customer).ToList();
 
         foreach (var order in orders)
         {
